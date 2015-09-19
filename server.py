@@ -1,17 +1,26 @@
 import argparse
 import threading
 import time
+import serial
 
 from pythonosc import dispatcher
 from pythonosc import osc_server
 
 lastValue = 0
 lastTime = 0
-
+ser = serial.Serial("COM6", 9600)
 def clenchHandler(*data):
+	global lastValue, lastTime
 	handleType, value = data
+	curTime = time.time()
 	print(value)
-	print(time.time())
+	if value == 1:
+		if value!=lastValue:
+			if curTime-lastTime<1:
+				ser.write(bytes(1))
+		lastTime = curTime
+	lastValue = value
+
 
 # Thanks osc_server on github for this code
 global dispatcher, Dispatcher, server
