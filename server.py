@@ -16,8 +16,9 @@ def clenchHandler(*data):
 	print(value)
 	if value == 1:
 		if value!=lastValue:
-			if curTime-lastTime<1:
+			if curTime-lastTime<0.5:
 				ser.write(bytes(1))
+				print("written to serial")
 		lastTime = curTime
 	lastValue = value
 
