@@ -8,6 +8,7 @@ from pythonosc import osc_server
 
 lastValue = 0
 lastTime = 0
+timeThreshold = 0.75
 ser = serial.Serial("COM6", 9600)
 def clenchHandler(*data):
 	global lastValue, lastTime
@@ -16,9 +17,10 @@ def clenchHandler(*data):
 	print(value)
 	if value == 1:
 		if value!=lastValue:
-			if curTime-lastTime<0.5:
-				ser.write(bytes(1))
+			if curTime-lastTime<timeThreshold:
+				ser.write(bytes([1]))
 				print("written to serial")
+
 		lastTime = curTime
 	lastValue = value
 
