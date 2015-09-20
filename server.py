@@ -2,31 +2,51 @@ import argparse
 import threading
 import time
 import serial
+import configparser
 
 from pythonosc import dispatcher
 from pythonosc import osc_server
 
-lastValue = 0
-lastTime = 0
-minTimeThreshold = 0.25
-maxTimeThreshold = 0.75
+
+parser = configparser.ConfigParser()
+parser.read("config.ini")
+userValues = parser["USER_VALUES"]
+
+desiredClenches = int(userValues["clenches"])
+threshold = float(userValues["bound"])
+
+legalValues = []
+lastClenchPeriod = 0
 ser = serial.Serial("COM6", 9600)
+
+def numClenches(binaryTimestampedArray):
+	secondlast = 0
+	last = 0
+	secondlast=0
+	number = 0
+	for node in binaryTimestampedArray:
+		if node[0]==1 and last == 0 and secondlast == 0:
+			number += 1;
+		last=secondlast
+		secondlast=node[0]
+	return(number)
+
 def clenchHandler(*data):
-	global lastValue, lastTime
+	global legalValues, lastClenchPeriod
 	handleType, value = data
-	curTime = time.time()
 	print(value)
-	if value == 1:
-		if value!=lastValue:
-			if minTimeThreshold<curTime-lastTime<maxTimeThreshold:
-				ser.write(bytes([1]))
-				print("written to serial")
+	curTime = time.time()
+	legalValues.append([value, curTime])
+	for node in legalValues:
+		if node[1]<curTime-threshold:
+			legalValues.pop(legalValues.index(node))
+	numClenchPeriod = numClenches(legalValues)
+	if numClenchPeriod==desiredClenches and lastClenchPeriod!=desiredClenches:
+		ser.write(bytes([1]))
+		print("serial print")
+	
+	lastClenchPeriod=numClenchPeriod
 
-		lastTime = curTime
-	lastValue = value
-
-
-# Thanks osc_server on github for this code
 global dispatcher, Dispatcher, server
 parser = argparse.ArgumentParser()
 parser.add_argument("--ip", default="localhost", help="The ip to listen on")
@@ -37,3 +57,5 @@ dispatcher.map("/muse/elements/jaw_clench", clenchHandler)
 server = osc_server.ThreadingOSCUDPServer((args.ip, args.port), dispatcher)
 server_thread = threading.Thread(target=server.serve_forever)
 server_thread.start()
+ 
+#muse-io --osc osc.udp://localhost:1337 
