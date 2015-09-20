@@ -39,9 +39,9 @@ void toggle(){
 }
 
 void closeServos(){
-  servoOne.write(25);
-  servoTwo.write(25);
-  servoThree.write(25);
+  servoOne.write(32);
+  servoTwo.write(32);
+  servoThree.write(32);
 }
 
 void openServos(){
